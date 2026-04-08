@@ -7,6 +7,8 @@ namespace Flow.Launcher.Plugin.BankCardFaker
 {
     public class BankCardFaker : IPlugin, ISettingProvider
     {
+        public readonly string IcoPath = "Images\\BankCardFaker.png";
+
         private PluginInitContext _context;
         private Settings _settings;
 
@@ -72,6 +74,7 @@ namespace Flow.Launcher.Plugin.BankCardFaker
                 {
                     Title = $"{bankCardInfo.BankName}-{bankCardInfo.CardType}",
                     SubTitle = $"{bankCardNum} - ({bankCardInfo.CardName})",
+                    IcoPath = IcoPath,
                     CopyText = bankCardNum,
                     ContextData = bankCardInfo,
                     Action = _ =>

@@ -7,6 +7,6 @@
     "Version": "1.0.0",
     "Language": "csharp",
     "Website": "https://github.com/yu-xiaoyao/Flow.Launcher.Plugin.BankCardFaker",
-    "IcoPath": "icon.png",
+    "IcoPath": "Images\\BankCardFaker.png",
     "ExecuteFileName": "Flow.Launcher.Plugin.BankCardFaker.dll"
 }

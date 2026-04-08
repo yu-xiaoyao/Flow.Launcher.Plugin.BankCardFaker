@@ -27,6 +27,12 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Content Include="Images\\*">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="Flow.Launcher.Plugin" Version="4.4.0" />
   </ItemGroup>
 

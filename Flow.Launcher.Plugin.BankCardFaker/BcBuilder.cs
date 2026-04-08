@@ -33,6 +33,8 @@ namespace Flow.Launcher.Plugin.BankCardFaker
             ["ccb"] = "建设银行",
             ["cmb"] = "招商银行",
             ["gdb"] = "广东发展银行",
+            ["gf"] = "广东发展银行",
+            ["pf"] = "浦东发展银行",
         };
 
 

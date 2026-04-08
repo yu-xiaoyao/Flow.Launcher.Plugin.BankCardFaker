@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace Flow.Launcher.Plugin.BankCardFaker;
+namespace Flow.Launcher.Plugin.BankCardFaker.Logger;
 
 public enum LoggerLevel
 {

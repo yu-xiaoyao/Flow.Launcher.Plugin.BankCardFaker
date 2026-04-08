@@ -1,0 +1,66 @@
+<UserControl x:Class="Flow.Launcher.Plugin.BankCardFaker.SettingsUserControl"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             mc:Ignorable="d"
+             d:DesignHeight="600" d:DesignWidth="500">
+    <Grid Margin="10">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <TextBlock Grid.Row="0" Text="选择启用的银行卡配置"
+                   FontSize="16" FontWeight="Bold" Margin="0,0,0,10"/>
+
+        <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="0,0,0,10">
+            <CheckBox Content="全选/取消全选" IsChecked="{Binding IsAllSelected}"
+                      VerticalAlignment="Center" Margin="0,0,15,0"/>
+            <Button Content="全选" Command="{Binding SelectAllCommand}" Margin="0,0,5,0"/>
+            <Button Content="取消全选" Command="{Binding DeselectAllCommand}"/>
+        </StackPanel>
+
+        <ListView Grid.Row="2" ItemsSource="{Binding BankCardItems}"
+                  BorderBrush="{DynamicResource PluginBorderColor}"
+                  BorderThickness="1">
+            <ListView.ItemContainerStyle>
+                <Style TargetType="ListViewItem">
+                    <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+                    <Setter Property="Padding" Value="4"/>
+                    <Setter Property="Background" Value="Transparent"/>
+                    <Style.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter Property="Background" Value="{DynamicResource PluginHoverColor}"/>
+                        </Trigger>
+                    </Style.Triggers>
+                </Style>
+            </ListView.ItemContainerStyle>
+            <ListView.ItemTemplate>
+                <DataTemplate>
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="80"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="80"/>
+                            <ColumnDefinition Width="80"/>
+                        </Grid.ColumnDefinitions>
+                        <CheckBox Grid.Column="0" IsChecked="{Binding IsChecked}"
+                                  VerticalAlignment="Center" Margin="0,0,8,0"/>
+                        <TextBlock Grid.Column="1" Text="{Binding Bin}"
+                                   VerticalAlignment="Center" FontFamily="Consolas"
+                                   Foreground="{DynamicResource PluginBorderColor}"/>
+                        <TextBlock Grid.Column="2" Text="{Binding BankName}"
+                                   VerticalAlignment="Center" Margin="4,0"/>
+                        <TextBlock Grid.Column="3" Text="{Binding CardType}"
+                                   VerticalAlignment="Center"/>
+                        <TextBlock Grid.Column="4" Text="{Binding CardLength, StringFormat={}{0}位}"
+                                   VerticalAlignment="Center" TextAlignment="Right"/>
+                    </Grid>
+                </DataTemplate>
+            </ListView.ItemTemplate>
+        </ListView>
+    </Grid>
+</UserControl>

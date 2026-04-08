@@ -1,0 +1,12 @@
+{
+    "ID": "AEE3F2C9-A655-44BE-A713-B6A1EA1226E8",
+    "ActionKeyword": "fbn",
+    "Name": "FakerBankCardNumber",
+    "Description": "Fake Chinese Bank Card Number",
+    "Author": "yu-xiaoyao",
+    "Version": "1.0.0",
+    "Language": "csharp",
+    "Website": "https://github.com/yu-xiaoyao/Flow.Launcher.Plugin.BankCardFaker",
+    "IcoPath": "icon.png",
+    "ExecuteFileName": "Flow.Launcher.Plugin.BankCardFaker.dll"
+}

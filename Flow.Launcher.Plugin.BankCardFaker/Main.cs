@@ -35,78 +35,80 @@ namespace Flow.Launcher.Plugin.BankCardFaker
 
             InnerLogger.Logger.Debug($"search: {search}");
 
-            var result = new List<Result>();
-
-            if (!string.IsNullOrEmpty(search))
+            if (string.IsNullOrEmpty(search))
             {
-                var primaryList = new List<BankCardInfo>();
-                var secondaryList = new List<BankCardInfo>();
+                return buildBankResults(bankInfos);
+            }
 
-                foreach (var f in bankInfos)
+            var result = new List<Result>();
+            var primaryList = new List<BankCardInfo>();
+            var secondaryList = new List<BankCardInfo>();
+
+            foreach (var f in bankInfos)
+            {
+                if (BcBuilder.EnBankCode.ContainsKey(search.ToLower()))
                 {
-                    if (BcBuilder.EnBankCode.ContainsKey(search.ToLower()))
+                    var rn = BcBuilder.EnBankCode[search.ToLower()];
+                    var match = string.Equals(rn, f.BankName, StringComparison.OrdinalIgnoreCase);
+                    if (match)
                     {
-                        var rn = BcBuilder.EnBankCode[search.ToLower()];
-                        var match = string.Equals(rn, f.BankName, StringComparison.OrdinalIgnoreCase);
-                        if (match)
-                        {
-                            InnerLogger.Logger.Debug(
-                                $"Match En Code: {search}. Bin: {f.Bin} - Card Type: {f.CardType} - Bank Name: {f.BankName}");
-                            primaryList.Add(f);
-                        }
-                        continue;
-                    }
-
-                    if (f.BankName.Contains(search, StringComparison.OrdinalIgnoreCase))
-                    {
+                        InnerLogger.Logger.Debug(
+                            $"Match En Code: {search}. Bin: {f.Bin} - Card Type: {f.CardType} - Bank Name: {f.BankName}");
                         primaryList.Add(f);
-                        continue;
-                    }
-
-                    if (_stringMatcher.Match(search, f.BankName, _options))
-                    {
-                        primaryList.Add(f);
-                        continue;
-                    }
-
-
-                    if ($"{f.BankName}{f.CardType}".Contains(search, StringComparison.OrdinalIgnoreCase))
-                    {
-                        secondaryList.Add(f);
-                        continue;
-                    }
-
-                    if (f.CardType.Contains(search, StringComparison.OrdinalIgnoreCase))
-                    {
-                        secondaryList.Add(f);
-                        continue;
-                    }
-
-                    if (_stringMatcher.Match(search, $"{f.BankName}{f.CardType}", _options))
-                    {
-                        secondaryList.Add(f);
-                        continue;
-                    }
-
-                    if (_stringMatcher.Match(search, f.CardType, _options))
-                    {
-                        secondaryList.Add(f);
                         continue;
                     }
                 }
 
-                if (primaryList.Count != 0)
+                if (f.BankName.Contains(search, StringComparison.OrdinalIgnoreCase))
                 {
-                    var list = buildBankResults(primaryList);
-                    result.AddRange(list);
+                    primaryList.Add(f);
+                    continue;
                 }
 
-                if (secondaryList.Count != 0)
+                if (_stringMatcher.Match(search, f.BankName, _options))
                 {
-                    var list = buildBankResults(secondaryList);
-                    result.AddRange(list);
+                    primaryList.Add(f);
+                    continue;
+                }
+
+
+                if ($"{f.BankName}{f.CardType}".Contains(search, StringComparison.OrdinalIgnoreCase))
+                {
+                    secondaryList.Add(f);
+                    continue;
+                }
+
+                if (f.CardType.Contains(search, StringComparison.OrdinalIgnoreCase))
+                {
+                    secondaryList.Add(f);
+                    continue;
+                }
+
+                if (_stringMatcher.Match(search, $"{f.BankName}{f.CardType}", _options))
+                {
+                    secondaryList.Add(f);
+                    continue;
+                }
+
+                if (_stringMatcher.Match(search, f.CardType, _options))
+                {
+                    secondaryList.Add(f);
+                    continue;
                 }
             }
+
+            if (primaryList.Count != 0)
+            {
+                var list = buildBankResults(primaryList);
+                result.AddRange(list);
+            }
+
+            if (secondaryList.Count != 0)
+            {
+                var list = buildBankResults(secondaryList);
+                result.AddRange(list);
+            }
+
 
             return result;
         }

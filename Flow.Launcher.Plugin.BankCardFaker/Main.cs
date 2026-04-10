@@ -1,13 +1,12 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Windows.Controls;
 using Flow.Launcher.Plugin.BankCardFaker.Logger;
 using Flow.Launcher.Plugin.BankCardFaker.Matcher;
 
 namespace Flow.Launcher.Plugin.BankCardFaker
 {
-    public class BankCardFaker : IPlugin, ISettingProvider
+    public class BankCardFaker : IPlugin, ISettingProvider, IContextMenu
     {
         public readonly string IcoPath = "Images\\BankCardFaker.png";
 
@@ -31,86 +30,104 @@ namespace Flow.Launcher.Plugin.BankCardFaker
         {
             var bankInfos = _getConfigBankCardInfoList();
 
-            var search = query.Search.Trim();
+            var bankNameFilter = string.Empty;
+            var bankCodeFilter = string.Empty;
+            var bankCardFilter = string.Empty;
 
-            InnerLogger.Logger.Debug($"search: {search}");
-
-            if (string.IsNullOrEmpty(search))
+            foreach (var querySearchTerm in query.SearchTerms)
             {
-                return buildBankResults(bankInfos);
-            }
-
-            var result = new List<Result>();
-            var primaryList = new List<BankCardInfo>();
-            var secondaryList = new List<BankCardInfo>();
-
-            foreach (var f in bankInfos)
-            {
-                if (BcBuilder.EnBankCode.ContainsKey(search.ToLower()))
+                if (int.TryParse(querySearchTerm, out var bnStart))
                 {
-                    var rn = BcBuilder.EnBankCode[search.ToLower()];
-                    var match = string.Equals(rn, f.BankName, StringComparison.OrdinalIgnoreCase);
-                    if (match)
+                    if (bnStart > 0)
                     {
-                        InnerLogger.Logger.Debug(
-                            $"Match En Code: {search}. Bin: {f.Bin} - Card Type: {f.CardType} - Bank Name: {f.BankName}");
-                        primaryList.Add(f);
-                        continue;
+                        if (string.IsNullOrEmpty(bankCodeFilter))
+                        {
+                            bankCodeFilter = querySearchTerm;
+                            continue;
+                        }
                     }
                 }
 
-                if (f.BankName.Contains(search, StringComparison.OrdinalIgnoreCase))
+                if (string.IsNullOrEmpty(bankNameFilter))
+                {
+                    bankNameFilter = querySearchTerm;
+                }
+                else
+                {
+                    if (string.IsNullOrEmpty(bankCardFilter))
+                        bankCardFilter = querySearchTerm;
+                }
+            }
+
+            InnerLogger.Logger.Debug(
+                $"bankNameFilter: {bankNameFilter}.  bankCodeFilter: {bankCodeFilter}. bankCardFilter: {bankCardFilter}");
+
+            var primaryList = new List<BankCardInfo>();
+            foreach (var f in bankInfos)
+            {
+                var matchBankName = false;
+                var matchBankCode = false;
+                var matchBankType = false;
+
+                // 名称
+                if (!string.IsNullOrEmpty(bankNameFilter))
+                {
+                    if (BcBuilder.EnBankCode.ContainsKey(bankNameFilter.ToLower()))
+                    {
+                        var rn = BcBuilder.EnBankCode[bankNameFilter.ToLower()];
+                        var match = string.Equals(rn, f.BankName, StringComparison.OrdinalIgnoreCase);
+                        if (match)
+                        {
+                            InnerLogger.Logger.Debug(
+                                $"Match En Code: {bankNameFilter}. Bin: {f.Bin} - Card Type: {f.CardType} - Bank Name: {f.BankName}");
+                            matchBankName = true;
+                        }
+                    }
+
+                    if (!matchBankName)
+                    {
+                        if (f.BankName.Contains(bankNameFilter, StringComparison.OrdinalIgnoreCase))
+                            matchBankName = true;
+
+                        if (!matchBankName)
+                        {
+                            if (_stringMatcher.Match(bankNameFilter, f.BankName, _options))
+                                matchBankName = true;
+                        }
+                    }
+                }
+                else matchBankName = true;
+
+                // 卡类型
+                if (!string.IsNullOrEmpty(bankCardFilter))
+                {
+                    var cardType = BcBuilder.GetCardTypeDescription(f.CardType);
+                    if (cardType.Contains(bankCardFilter, StringComparison.OrdinalIgnoreCase))
+                        matchBankType = true;
+
+                    if (!matchBankType)
+                    {
+                        if (_stringMatcher.Match(bankCardFilter, cardType, _options))
+                            matchBankType = true;
+                    }
+                }
+                else matchBankType = true;
+
+                // 卡号前缀
+                if (!string.IsNullOrEmpty(bankCodeFilter))
+                {
+                    if (f.Bin.StartsWith(bankCodeFilter))
+                        matchBankCode = true;
+                }
+                else matchBankCode = true;
+
+                if (matchBankName && matchBankType && matchBankCode)
                 {
                     primaryList.Add(f);
-                    continue;
-                }
-
-                if (_stringMatcher.Match(search, f.BankName, _options))
-                {
-                    primaryList.Add(f);
-                    continue;
-                }
-
-
-                if ($"{f.BankName}{f.CardType}".Contains(search, StringComparison.OrdinalIgnoreCase))
-                {
-                    secondaryList.Add(f);
-                    continue;
-                }
-
-                if (f.CardType.Contains(search, StringComparison.OrdinalIgnoreCase))
-                {
-                    secondaryList.Add(f);
-                    continue;
-                }
-
-                if (_stringMatcher.Match(search, $"{f.BankName}{f.CardType}", _options))
-                {
-                    secondaryList.Add(f);
-                    continue;
-                }
-
-                if (_stringMatcher.Match(search, f.CardType, _options))
-                {
-                    secondaryList.Add(f);
-                    continue;
                 }
             }
 
-            if (primaryList.Count != 0)
-            {
-                var list = buildBankResults(primaryList);
-                result.AddRange(list);
-            }
-
-            if (secondaryList.Count != 0)
-            {
-                var list = buildBankResults(secondaryList);
-                result.AddRange(list);
-            }
-
-
-            return result;
+            return buildBankResults(query, primaryList);
         }
 
         public Control CreateSettingPanel()
@@ -118,19 +135,27 @@ namespace Flow.Launcher.Plugin.BankCardFaker
             return new SettingsUserControl { DataContext = _settings };
         }
 
-        private List<Result> buildBankResults(List<BankCardInfo> bankCardInfos)
+        private List<Result> buildBankResults(Query query, List<BankCardInfo> bankCardInfos)
         {
             var result = new List<Result>();
             foreach (var bankCardInfo in bankCardInfos)
             {
                 var bankCardNum = BcBuilder.BuildCardNum(bankCardInfo);
+                var cardTypeName = BcBuilder.GetCardTypeDescription(bankCardInfo.CardType);
                 result.Add(new Result()
                 {
-                    Title = $"{bankCardInfo.BankName}-{bankCardInfo.CardType}",
-                    SubTitle = $"{bankCardNum} - ({bankCardInfo.CardName})",
+                    // Title = $"{bankCardInfo.BankName}",
+                    // SubTitle = $"{cardTypeName}: {bankCardNum}",
+                    Title = $"{bankCardInfo.BankName} {cardTypeName}",
+                    SubTitle = bankCardNum,
                     IcoPath = IcoPath,
                     CopyText = bankCardNum,
-                    ContextData = bankCardInfo,
+                    ContextData = new BankContextData
+                    {
+                        BankCardInfo = bankCardInfo,
+                        BankCardNum = bankCardNum
+                    },
+                    AutoCompleteText = $"{query.ActionKeyword} {bankCardInfo.BankName} {cardTypeName}",
                     Action = _ =>
                     {
                         _context.API.CopyToClipboard(bankCardNum, showDefaultNotification: false);
@@ -146,34 +171,83 @@ namespace Flow.Launcher.Plugin.BankCardFaker
         {
             var result = new List<BankCardInfo>();
 
-            if (!_settings.SelectedBinList.Any())
+            foreach (var bankCardInfo in BcBuilder.BankConfig)
             {
-                foreach (var bankCardInfo in BcBuilder.BankConfig)
+                var cardType = BcBuilder.GetCardTypeByName(bankCardInfo.CardType);
+                if (cardType == CardType.DebitCard)
                 {
-                    if (_settings.CardTypes.Any())
+                    if (_settings.DebitCardType)
                     {
-                        if (_settings.CardTypes.Contains(bankCardInfo.CardType))
+                        if (_settings.SelectedBinList.Count != 0)
+                        {
+                            if (_settings.SelectedBinList.Contains(bankCardInfo.Bin))
+                                result.Add(bankCardInfo);
+                        }
+                        else
                             result.Add(bankCardInfo);
                     }
-                    else result.Add(bankCardInfo);
                 }
-            }
-            else
-            {
-                foreach (var bankCardInfo in BcBuilder.BankConfig)
+                else if (cardType == CardType.CreditCard)
                 {
-                    if (!_settings.SelectedBinList.Contains(bankCardInfo.Bin)) continue;
-
-                    if (_settings.CardTypes.Any())
+                    if (_settings.CreditCardType)
                     {
-                        if (_settings.CardTypes.Contains(bankCardInfo.CardType))
+                        if (_settings.SelectedBinList.Count != 0)
+                        {
+                            if (_settings.SelectedBinList.Contains(bankCardInfo.Bin))
+                                result.Add(bankCardInfo);
+                        }
+                        else
                             result.Add(bankCardInfo);
                     }
-                    else result.Add(bankCardInfo);
                 }
             }
 
             return result;
         }
+
+        public List<Result> LoadContextMenus(Result selectedResult)
+        {
+            var contextData = selectedResult.ContextData as BankContextData;
+            if (contextData == null) return [];
+
+            var bankCardInfo = contextData.BankCardInfo;
+            var fullInfo =
+                $"{bankCardInfo.BankName}\n{BcBuilder.GetCardTypeDescription(bankCardInfo.CardType)}\n{contextData.BankCardNum}\n{bankCardInfo.CardType}\n{bankCardInfo.CardName}";
+            return
+            [
+                new Result
+                {
+                    Title = "复制卡号",
+                    SubTitle = contextData.BankCardNum,
+                    IcoPath = IcoPath,
+                    CopyText = contextData.BankCardNum,
+                    Action = _ =>
+                    {
+                        _context.API.CopyToClipboard(contextData.BankCardNum, showDefaultNotification: false);
+                        return true;
+                    }
+                },
+
+                new Result
+                {
+                    Title = "复制全部银行信息",
+                    SubTitle = fullInfo.Replace("\n", "  "),
+                    IcoPath = IcoPath,
+                    CopyText = fullInfo,
+                    Action = _ =>
+                    {
+                        _context.API.CopyToClipboard(fullInfo, showDefaultNotification: false);
+                        return true;
+                    }
+                }
+            ];
+        }
+    }
+
+
+    public class BankContextData
+    {
+        public BankCardInfo BankCardInfo { set; get; }
+        public string BankCardNum { set; get; }
     }
 }

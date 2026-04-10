@@ -12,7 +12,15 @@ public class Main_Test
         // Console.WriteLine(AppDomain.CurrentDomain.SetupInformation.ApplicationBase);
         // check_code_dup();
 
-        check_pinyin();
+        // check_pinyin();
+        
+        
+        var config = BcBuilder.BankConfig;
+        var list = config.Select(c => c.BankName).Distinct().ToList();
+        for (var i = 0; i < list.Count; i++)
+        {
+            Console.WriteLine(list[i]);
+        }
     }
 
     private static void check_pinyin()
@@ -26,8 +34,9 @@ public class Main_Test
         var m = sm.Match("WD", "我的主要Github", new MatchOptions());
         Console.WriteLine(m);
     }
+    
 
-    public static void check_code_dup()
+    private static void check_code_dup()
     {
         var config = BcBuilder.BankConfig;
         var duplicates = config

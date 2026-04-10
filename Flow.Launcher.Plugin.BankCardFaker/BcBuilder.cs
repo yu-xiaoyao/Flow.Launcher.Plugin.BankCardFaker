@@ -45,8 +45,7 @@ namespace Flow.Launcher.Plugin.BankCardFaker
             ["icbc"] = "工商银行",
             ["abc"] = "农业银行",
             ["ccb"] = "建设银行",
-            ["cmb"] = "招商银行",
-            ["pf"] = "浦东发展银行",
+            ["cmb"] = "招商银行"
         };
 
         public static CardType GetCardTypeByName(string name)

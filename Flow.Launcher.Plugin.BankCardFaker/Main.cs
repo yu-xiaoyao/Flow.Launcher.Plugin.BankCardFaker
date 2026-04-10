@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Windows.Controls;
 using Flow.Launcher.Plugin.BankCardFaker.Logger;
 using Flow.Launcher.Plugin.BankCardFaker.Matcher;
@@ -29,6 +30,13 @@ namespace Flow.Launcher.Plugin.BankCardFaker
         public List<Result> Query(Query query)
         {
             var bankInfos = _getConfigBankCardInfoList();
+
+            if (_settings.InputEmptyRandom && string.IsNullOrEmpty(query.Search.Trim()))
+            {
+                var rng = new Random();
+                var infos = bankInfos.OrderBy(x => rng.Next()).ToList();
+                return buildBankResults(query, infos);
+            }
 
             var bankNameFilter = string.Empty;
             var bankCodeFilter = string.Empty;
